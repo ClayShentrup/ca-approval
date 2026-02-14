@@ -1255,10 +1255,12 @@ code {
     <h2 class="reveal">The centrist-finding property</h2>
     <p class="text-muted reveal">Computational social choice research — including Monte Carlo simulations measuring Voter Satisfaction Efficiency — consistently demonstrates that approval voting elects candidates closest to the center of the voter distribution. It maximizes aggregate voter utility. This isn't a partisan claim; it's a mathematical property of the mechanism.</p>
 
+    <p class="text-muted reveal">The visualization below simulates score voting — which lets voters rate candidates on a scale. Approval voting is just score voting on a <code>{0, 1}</code> binary scale, so it inherits the same centrist-finding dynamics. Watch how score voting consistently finds the candidate nearest the center of the electorate, while plurality drifts toward polarized winners:</p>
+
     <div class="video-wrap reveal">
       <iframe
         src="https://www.youtube.com/embed/-4FXLQoLDBA"
-        title="Approval Voting Explained"
+        title="Score Voting Simulation"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowfullscreen
         loading="lazy"
@@ -1266,9 +1268,9 @@ code {
     </div>
 
     <a class="viz-card reveal" href="https://www.rangevoting.org/IEVS/Pictures.html" target="_blank" rel="noopener">
-      <div class="tag">Interactive Visualization</div>
+      <div class="tag">Interactive Visualization — includes Approval Voting explicitly</div>
       <h3>IEVS: Impartial Election Visualization Simulations</h3>
-      <p>Explore how different voting methods perform across thousands of simulated elections. Approval voting consistently selects candidates with the broadest support, near the center of the voter distribution.</p>
+      <p>These simulations include approval voting directly alongside score, plurality, IRV, and others across thousands of elections. Approval voting consistently selects candidates with the broadest support, near the center of the voter distribution — performing comparably to its continuous cousin.</p>
     </a>
 
     <div class="callout reveal">
