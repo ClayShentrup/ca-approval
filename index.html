@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>California Approval Voting Act — Patch the Primary</title>
+<meta name="description" content="A one-line constitutional fix to eliminate vote-splitting in California's top-two primary. Zero new hardware. Zero new software. Just better math.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #0a0a0c;
+  --bg-secondary: #111114;
+  --bg-tertiary: #18181c;
+  --bg-card: #1a1a1f;
+  --bg-highlight: #1e1e24;
+  --text-primary: #e8e6e3;
+  --text-secondary: #9a9890;
+  --text-muted: #5a5850;
+  --accent: #00e599;
+  --accent-dim: #00e59930;
+  --accent-glow: #00e59918;
+  --accent-secondary: #00b8d4;
+  --red: #ff4d4d;
+  --amber: #ffbe0b;
+  --border: #2a2a30;
+  --mono: 'JetBrains Mono', monospace;
+  --serif: 'Source Serif 4', Georgia, serif;
+  --sans: 'DM Sans', -apple-system, sans-serif;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--bg-primary);
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.7;
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
+/* ─── NAV ─── */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 0 2rem;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(10,10,12,0.85);
+  backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.4s;
+}
+
+nav.scrolled { border-bottom-color: var(--border); }
+
+.nav-logo {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.nav-logo span { color: var(--accent); }
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.nav-links a {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.nav-links a:hover { color: var(--text-primary); }
+
+.nav-cta {
+  font-family: var(--mono) !important;
+  font-size: 11px !important;
+  background: var(--accent) !important;
+  color: var(--bg-primary) !important;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-weight: 600 !important;
+  transition: opacity 0.3s !important;
+}
+
+.nav-cta:hover { opacity: 0.85; }
+
+/* ─── HERO ─── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8rem 2rem 4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.hero-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.hero-eyebrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.2s forwards;
+}
+
+.hero-eyebrow::before {
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: var(--accent);
+}
+
+.hero h1 {
+  font-family: var(--serif);
+  font-size: clamp(2.8rem, 6vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  margin-bottom: 2rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.4s forwards;
+}
+
+.hero h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.hero-sub {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  max-width: 600px;
+  line-height: 1.7;
+  margin-bottom: 3rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.6s forwards;
+}
+
+.hero-quote {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--text-secondary);
+  border-left: 2px solid var(--accent);
+  padding-left: 1.5rem;
+  margin-bottom: 3rem;
+  max-width: 550px;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.8s forwards;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  opacity: 0;
+  animation: fadeUp 0.8s 1s forwards;
+}
+
+.btn-primary {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: var(--accent);
+  color: var(--bg-primary);
+  padding: 14px 28px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 30px var(--accent-dim);
+}
+
+.btn-secondary {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 14px 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s;
+}
+
+.btn-secondary:hover {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+/* ─── SECTIONS ─── */
+section {
+  padding: 6rem 2rem;
+  position: relative;
+}
+
+section::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.section-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.section-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-label::before {
+  content: attr(data-num);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  font-size: 10px;
+  color: var(--accent);
+}
+
+h2 {
+  font-family: var(--serif);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: 1.5rem;
+}
+
+h3 {
+  font-family: var(--serif);
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 0.75rem;
+}
+
+p + p { margin-top: 1.2rem; }
+
+.text-muted { color: var(--text-secondary); }
+
+/* ─── DIFF BLOCK ─── */
+.diff-block {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 2.5rem 0;
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.diff-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.diff-header .filename { color: var(--text-secondary); }
+
+.diff-body {
+  padding: 20px;
+  overflow-x: auto;
+}
+
+.diff-line {
+  padding: 2px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.diff-del {
+  background: rgba(255,77,77,0.1);
+  color: var(--red);
+  text-decoration: line-through;
+  text-decoration-color: rgba(255,77,77,0.5);
+}
+
+.diff-add {
+  background: rgba(0,229,153,0.1);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.diff-context { color: var(--text-muted); }
+
+/* ─── METRIC CARDS ─── */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 2.5rem 0;
+}
+
+.metric-card {
+  background: var(--bg-secondary);
+  padding: 2rem;
+}
+
+.metric-card .number {
+  font-family: var(--mono);
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.metric-card .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.metric-card .detail {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ─── FEATURE ROWS ─── */
+.feature-row {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 1.5rem;
+  padding: 2rem 0;
+  border-bottom: 1px solid var(--border);
+  align-items: start;
+}
+
+.feature-row:last-child { border-bottom: none; }
+
+.feature-icon {
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+.feature-row h3 { margin-bottom: 0.5rem; }
+.feature-row p { color: var(--text-secondary); font-size: 15px; }
+
+/* ─── COMPARISON TABLE ─── */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 2.5rem 0;
+  font-size: 14px;
+}
+
+.compare-table th {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.compare-table th:first-child { border-radius: 8px 0 0 0; }
+.compare-table th:last-child { border-radius: 0 8px 0 0; }
+
+.compare-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  vertical-align: top;
+}
+
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td:first-child { color: var(--text-primary); font-weight: 500; }
+
+.check { color: var(--accent); font-weight: 700; }
+.cross { color: var(--red); }
+.warn { color: var(--amber); }
+
+/* ─── QUOTE CALLOUT ─── */
+.callout {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  padding: 2rem;
+  margin: 2.5rem 0;
+}
+
+.callout p {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--text-primary);
+  line-height: 1.7;
+}
+
+.callout cite {
+  display: block;
+  margin-top: 1rem;
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+/* ─── VIDEO SECTION ─── */
+.video-section {
+  background: var(--bg-secondary);
+}
+
+.video-wrap {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin-top: 2rem;
+  background: var(--bg-primary);
+}
+
+.video-wrap iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* ─── VISUALIZATION LINK ─── */
+.viz-card {
+  display: block;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 2rem;
+  margin: 2.5rem 0;
+  text-decoration: none;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.viz-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+}
+
+.viz-card::after {
+  content: '→';
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  font-family: var(--mono);
+  font-size: 1.2rem;
+  color: var(--accent);
+  transition: transform 0.3s;
+}
+
+.viz-card:hover::after { transform: translateX(4px); }
+
+.viz-card .tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+}
+
+.viz-card h3 {
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.viz-card p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  max-width: 600px;
+}
+
+/* ─── TIMELINE ─── */
+.timeline {
+  margin: 2.5rem 0;
+  position: relative;
+  padding-left: 2rem;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: var(--border);
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 2rem;
+}
+
+.timeline-item:last-child { padding-bottom: 0; }
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -2rem;
+  top: 8px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translateX(-4px);
+}
+
+.timeline-item .year {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.timeline-item .event {
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.timeline-item .note {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* ─── CTA SECTION ─── */
+.cta-section {
+  background: var(--bg-secondary);
+  text-align: center;
+  padding: 8rem 2rem;
+  position: relative;
+}
+
+.cta-section::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+
+.cta-section h2 {
+  max-width: 650px;
+  margin: 0 auto 1.5rem;
+}
+
+.cta-section p {
+  color: var(--text-secondary);
+  max-width: 500px;
+  margin: 0 auto 2.5rem;
+}
+
+.cta-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ─── FOOTER ─── */
+footer {
+  padding: 3rem 2rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+footer a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+footer a:hover { color: var(--accent); }
+
+/* ─── SCROLL ANIMATIONS ─── */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Stagger children */
+.stagger > .reveal:nth-child(1) { transition-delay: 0s; }
+.stagger > .reveal:nth-child(2) { transition-delay: 0.08s; }
+.stagger > .reveal:nth-child(3) { transition-delay: 0.16s; }
+.stagger > .reveal:nth-child(4) { transition-delay: 0.24s; }
+.stagger > .reveal:nth-child(5) { transition-delay: 0.32s; }
+
+/* ─── CODE INLINE ─── */
+code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--bg-tertiary);
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--accent);
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  .nav-links a:not(.nav-cta) { display: none; }
+  .hero { padding: 7rem 1.5rem 3rem; }
+  section { padding: 4rem 1.5rem; }
+  .feature-row { grid-template-columns: 1fr; gap: 1rem; }
+  .feature-icon { display: none; }
+  .metric-grid { grid-template-columns: 1fr; }
+  .compare-table { font-size: 12px; }
+  .compare-table th, .compare-table td { padding: 10px 8px; }
+  .cta-section { padding: 5rem 1.5rem; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ─── NAV ─── -->
+<nav id="nav">
+  <div class="nav-logo"><span>CA</span> Approval Voting Act</div>
+  <div class="nav-links">
+    <a href="#diagnosis">Diagnosis</a>
+    <a href="#patch">The Patch</a>
+    <a href="#implementation">Implementation</a>
+    <a href="#evidence">Evidence</a>
+    <a href="CA_Approval_Voting_Act_Filing_Package.docx" class="nav-cta">Filing Package ↓</a>
+  </div>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">Initiative Constitutional Amendment</div>
+    <h1>California's primary has<br>a <em>one-line bug</em>.</h1>
+    <p class="hero-sub">Proposition 14 opened the primary to every voter. But it shipped with a legacy constraint: each voter selects exactly one candidate. When similar candidates split a constituency, the wrong ones advance. We have the patch.</p>
+    <div class="hero-quote">"You've got to treat this like an engineering problem. A mechanism design problem."</div>
+    <div class="hero-actions">
+      <a href="#patch" class="btn-primary">See the diff →</a>
+      <a href="CA_Approval_Voting_Act_Filing_Package.docx" class="btn-secondary">Download filing package</a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── DIAGNOSIS ─── -->
+<section id="diagnosis">
+  <div class="section-inner">
+    <div class="section-label reveal" data-num="01">Diagnosis</div>
+    <h2 class="reveal">The plurality bug</h2>
+    <p class="text-muted reveal">California's top-two primary was a major upgrade. It eliminated partisan gatekeeping, opened the primary to all voters, and guaranteed a competitive general election. But the upgrade shipped with a constraint inherited from the legacy system it replaced.</p>
+    <p class="text-muted reveal">Each voter may mark <strong style="color:var(--text-primary)">exactly one candidate</strong>. This is the plurality constraint. When three or more candidates compete for the same constituency, their supporters split their votes and can collectively lose to a candidate with narrower support. This isn't a theory — it's a formally characterized failure mode with a name: <strong style="color:var(--text-primary)">vote-splitting</strong>.</p>
+
+    <div class="metric-grid reveal">
+      <div class="metric-card">
+        <div class="number">1</div>
+        <div class="label">Votes allowed</div>
+        <div class="detail">Per voter, per race. Regardless of how many candidates they approve of.</div>
+      </div>
+      <div class="metric-card">
+        <div class="number">n</div>
+        <div class="label">Candidates</div>
+        <div class="detail">In competitive California primaries, often 5–10+ candidates per race.</div>
+      </div>
+      <div class="metric-card">
+        <div class="number">2</div>
+        <div class="label">Slots advance</div>
+        <div class="detail">Top two advance to the general. Vote-splitting determines which two.</div>
+      </div>
+    </div>
+
+    <p class="text-muted reveal">The bug produces second-order effects. Strong candidates decline to enter races to avoid splitting votes with ideological neighbors. Donors make premature viability bets, creating a shadow primary driven by funding rather than preference. Incumbents benefit from fractured opposition. These are symptoms of the constraint, not of the candidates.</p>
+  </div>
+</section>
+
+<!-- ─── THE PATCH ─── -->
+<section id="patch" style="background: var(--bg-secondary);">
+  <div class="section-inner">
+    <div class="section-label reveal" data-num="02">The Patch</div>
+    <h2 class="reveal">One-line fix.<br>Approval voting.</h2>
+    <p class="text-muted reveal">Approval voting modifies exactly one parameter: the number of candidates a voter may select. Under the current system, that value is hardcoded to <code>1</code>. Under approval voting, it becomes <code>[1, n]</code>. Voters may approve of as many candidates as they wish. Each approval counts as one vote. Top two advance. Everything else stays the same.</p>
+
+    <div class="diff-block reveal">
+      <div class="diff-header">
+        <span class="filename">California Constitution — Article II, § 5(a)</span>
+        <span>amendment</span>
+      </div>
+      <div class="diff-body">
+        <div class="diff-line diff-context">  (a) A voter-nomination primary election shall be</div>
+        <div class="diff-line diff-context">  conducted to select the candidates for congressional</div>
+        <div class="diff-line diff-context">  and state elective offices in California. All voters</div>
+        <div class="diff-line diff-context">  may vote at a voter-nominated primary election for</div>
+        <div class="diff-line diff-del">- any candidate for congressional and state elective</div>
+        <div class="diff-line diff-add">+ one or more candidates for congressional and state</div>
+        <div class="diff-line diff-add">+ elective office without regard to the political party</div>
+        <div class="diff-line diff-context">  preference disclosed by the candidate or the voter,</div>
+        <div class="diff-line diff-context">  provided that the voter is otherwise qualified to vote</div>
+        <div class="diff-line diff-context">  for candidates for the office in question.</div>
+        <div class="diff-line diff-add">+ Each voter may vote for as many or as few candidates</div>
+        <div class="diff-line diff-add">+ as the voter chooses for each office, but may not</div>
+        <div class="diff-line diff-add">+ cast more than one vote for any single candidate.</div>
+        <div class="diff-line diff-context">  The candidates who are the top two vote-getters at a</div>
+        <div class="diff-line diff-context">  voter-nominated primary election for a congressional</div>
+        <div class="diff-line diff-context">  or state elective office shall, regardless of party</div>
+        <div class="diff-line diff-context">  preference, compete in the ensuing general election.</div>
+      </div>
+    </div>
+
+    <div class="callout reveal">
+      <p>The top-two architecture remains. The nonpartisan primary remains. All-voter participation remains. The only change is removing the artificial constraint on voter expression.</p>
+    </div>
+
+    <div class="stagger">
+      <div class="feature-row reveal">
+        <div class="feature-icon">✓</div>
+        <div>
+          <h3>Preserved</h3>
+          <p>Top-two general election structure. Nonpartisan primary ballot. All-voter participation. Candidate party-preference labeling. Precinct-level tabulation.</p>
+        </div>
+      </div>
+      <div class="feature-row reveal">
+        <div class="feature-icon" style="border-color: var(--accent);">+</div>
+        <div>
+          <h3>Added</h3>
+          <p>Voters can express support for every candidate they find acceptable, eliminating the forced tradeoff that causes vote-splitting.</p>
+        </div>
+      </div>
+      <div class="feature-row reveal">
+        <div class="feature-icon" style="border-color: var(--text-muted);">∅</div>
+        <div>
+          <h3>Not introduced</h3>
+          <p>No rankings. No runoffs. No new rounds. No algorithm more complex than addition. No new ballot layout. No new equipment.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── IMPLEMENTATION ─── -->
+<section id="implementation">
+  <div class="section-inner">
+    <div class="section-label reveal" data-num="03">Implementation</div>
+    <h2 class="reveal">Zero-cost deployment</h2>
+    <p class="text-muted reveal">This is not a rhetorical flourish. It is an engineering fact. Every component in the current election infrastructure already supports this change.</p>
+
+    <div class="stagger">
+      <div class="feature-row reveal">
+        <div class="feature-icon">⬡</div>
+        <div>
+          <h3>Hardware: no changes</h3>
+          <p>Every optical-scan system certified for use in California already reads multi-marked ballots. These systems count votes per candidate, not votes per voter. A ballot with three candidates marked is counted as one vote for each. No new machines. No new certification.</p>
+        </div>
+      </div>
+      <div class="feature-row reveal">
+        <div class="feature-icon">⌘</div>
+        <div>
+          <h3>Software: one flag</h3>
+          <p>Election management systems aggregate votes per candidate. Approval voting's tabulation requirement is identical: sum and rank. The only change is removing the overvote flag that treats multi-marked ballots as errors rather than valid expressions of preference.</p>
+        </div>
+      </div>
+      <div class="feature-row reveal">
+        <div class="feature-icon">◎</div>
+        <div>
+          <h3>Ballots: six words</h3>
+          <p>"Vote for One" becomes "Vote for One or More." This is a print-run change that occurs with every election cycle regardless. Marginal cost: effectively zero.</p>
+        </div>
+      </div>
+      <div class="feature-row reveal">
+        <div class="feature-icon">△</div>
+        <div>
+          <h3>Training: one sentence</h3>
+          <p>Poll workers learn one new instruction: multi-mark ballots in voter-nominated primary races are valid. This is simpler than any alternative reform.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── COMPARISON ─── -->
+<section style="background: var(--bg-secondary);">
+  <div class="section-inner">
+    <div class="section-label reveal" data-num="04">Competitive Analysis</div>
+    <h2 class="reveal">Why not the alternatives?</h2>
+    <p class="text-muted reveal">The voting reform space has multiple proposals. Here's the engineering comparison.</p>
+
+    <div class="reveal" style="overflow-x: auto;">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Property</th>
+          <th>Approval</th>
+          <th>RCV / IRV</th>
+          <th>STAR</th>
+          <th>Top-4 + RCV</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>New hardware required</td>
+          <td class="check">No</td>
+          <td class="cross">Often</td>
+          <td class="cross">Yes</td>
+          <td class="cross">Often</td>
+        </tr>
+        <tr>
+          <td>Precinct-summable</td>
+          <td class="check">Yes</td>
+          <td class="cross">No</td>
+          <td class="warn">Partial</td>
+          <td class="cross">No</td>
+        </tr>
+        <tr>
+          <td>Ballot complexity</td>
+          <td class="check">Same</td>
+          <td class="cross">Rankings</td>
+          <td class="cross">Scores</td>
+          <td class="cross">Rankings</td>
+        </tr>
+        <tr>
+          <td>Tabulation</td>
+          <td class="check">Addition</td>
+          <td class="cross">Multi-round</td>
+          <td class="cross">Two-phase</td>
+          <td class="cross">Multi-round</td>
+        </tr>
+        <tr>
+          <td>Ballot exhaustion</td>
+          <td class="check">None</td>
+          <td class="cross">Common</td>
+          <td class="check">None</td>
+          <td class="cross">Common</td>
+        </tr>
+        <tr>
+          <td>Adopted in U.S.</td>
+          <td class="check">Fargo, St. Louis</td>
+          <td class="check">NYC, AK*</td>
+          <td class="cross">None</td>
+          <td class="cross">AK (repealed)</td>
+        </tr>
+        <tr>
+          <td>Centrist/consensus bias</td>
+          <td class="check">Documented</td>
+          <td class="warn">Weak</td>
+          <td class="warn">Moderate</td>
+          <td class="warn">Weak</td>
+        </tr>
+        <tr>
+          <td>Voter comprehension</td>
+          <td class="check">Trivial</td>
+          <td class="warn">Moderate</td>
+          <td class="cross">Difficult</td>
+          <td class="cross">Difficult</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="text-muted reveal" style="font-size: 13px; margin-top: 0.5rem;">* Alaska adopted Top-4 + RCV in 2020 and repealed it in 2024.</p>
+  </div>
+</section>
+
+<!-- ─── EVIDENCE: VIDEO ─── -->
+<section id="evidence" class="video-section">
+  <div class="section-inner">
+    <div class="section-label reveal" data-num="05">Evidence</div>
+    <h2 class="reveal">The centrist-finding property</h2>
+    <p class="text-muted reveal">Computational social choice research — including Monte Carlo simulations measuring Voter Satisfaction Efficiency — consistently demonstrates that approval voting elects candidates closest to the center of the voter distribution. It maximizes aggregate voter utility. This isn't a partisan claim; it's a mathematical property of the mechanism.</p>
+
+    <div class="video-wrap reveal">
+      <iframe
+        src="https://www.youtube.com/embed/-4FXLQoLDBA"
+        title="Approval Voting Explained"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+        loading="lazy"
+      ></iframe>
+    </div>
+
+    <a class="viz-card reveal" href="https://www.rangevoting.org/IEVS/Pictures.html" target="_blank" rel="noopener">
+      <div class="tag">Interactive Visualization</div>
+      <h3>IEVS: Impartial Election Visualization Simulations</h3>
+      <p>Explore how different voting methods perform across thousands of simulated elections. Approval voting consistently selects candidates with the broadest support, near the center of the voter distribution.</p>
+    </a>
+
+    <div class="callout reveal">
+      <p>Vote-splitting rewards polarization. Approval voting rewards breadth. A candidate who is the genuine second choice of 60% of voters — but the first choice of only 15% — gets destroyed under plurality. Under approval voting, that candidate wins, because the mechanism correctly aggregates preferences.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── TRACK RECORD ─── -->
+<section>
+  <div class="section-inner">
+    <div class="section-label reveal" data-num="06">Production deployments</div>
+    <h2 class="reveal">Tested. Shipped. Stable.</h2>
+    <p class="text-muted reveal">Approval voting isn't theoretical. It has been adopted by voters, implemented by election administrators, and sustained across election cycles.</p>
+
+    <div class="timeline reveal">
+      <div class="timeline-item">
+        <div class="year">2018</div>
+        <div class="event">Fargo, North Dakota</div>
+        <div class="note">Adopted by ballot initiative — 64% approval. First U.S. city to use approval voting for government elections. Successfully administered in 2018 and 2020 cycles.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="year">2020</div>
+        <div class="event">St. Louis, Missouri</div>
+        <div class="note">Adopted by ballot initiative — 68% approval. Replaced partisan primary with approval voting primary + top-two general. Sound familiar?</div>
+      </div>
+      <div class="timeline-item">
+        <div class="year">2020 → 2024</div>
+        <div class="event">Alaska — a cautionary tale</div>
+        <div class="note">Adopted Top-4 + RCV. Repealed after one cycle. Complex tabulation, voter confusion, and "too complicated" opposition messaging proved fatal. Approval voting has none of these attack surfaces.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="year">Next</div>
+        <div class="event">California.</div>
+        <div class="note">40 million people. The fifth-largest economy in the world. A primary system that already has the right architecture — it just needs the single-selection constraint removed.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── KERNEL METAPHOR ─── -->
+<section style="background: var(--bg-secondary);">
+  <div class="section-inner">
+    <div class="section-label reveal" data-num="07">Architecture</div>
+    <h2 class="reveal">A kernel-level patch for<br>California's electoral firmware</h2>
+    <p class="text-muted reveal">Think of California's election system as an OS. The Constitution is the kernel. Statutes are userspace. Proposition 14 was a major kernel upgrade — it replaced the old partisan-primary architecture with a unified top-two system. But the upgrade shipped with a legacy constraint inherited from the old codebase: the single-selection rule.</p>
+    <p class="text-muted reveal">This measure patches that constraint at the only level where it exists: the Constitution. It doesn't modify the general election. It doesn't create new institutions. It doesn't alter the relationship between parties and the state. It changes one line in the kernel.</p>
+
+    <div class="diff-block reveal">
+      <div class="diff-header">
+        <span class="filename">election_os/kernel/primary.conf</span>
+        <span>pseudo-config</span>
+      </div>
+      <div class="diff-body">
+        <div class="diff-line diff-context">  # Voter-Nominated Primary Configuration</div>
+        <div class="diff-line diff-context">  primary_type: top_two</div>
+        <div class="diff-line diff-context">  ballot_access: all_voters</div>
+        <div class="diff-line diff-context">  party_nomination: disabled</div>
+        <div class="diff-line diff-del">- selections_per_voter: 1</div>
+        <div class="diff-line diff-add">+ selections_per_voter: 1..n</div>
+        <div class="diff-line diff-context">  advancement_slots: 2</div>
+        <div class="diff-line diff-context">  tabulation: sum_per_candidate</div>
+        <div class="diff-line diff-context">  general_election: top_two_runoff</div>
+      </div>
+    </div>
+
+    <p class="text-muted reveal">In software engineering terms: this is a one-line fix to a known, characterized, reproducible bug. The fix has been tested in production. It has no known regressions. It requires no dependency changes. It is the kind of patch that, once shipped, makes everyone ask why it wasn't in the original release.</p>
+  </div>
+</section>
+
+<!-- ─── CTA ─── -->
+<section class="cta-section" id="act">
+  <div class="section-inner">
+    <div class="section-label reveal" data-num="08" style="justify-content: center;">Ship it</div>
+    <h2 class="reveal">California's 40 million residents<br>deserve a <em style="color:var(--accent); font-style: italic;">debugged</em> primary.</h2>
+    <p class="reveal">The current system has a known, characterized, reproducible failure mode. We have a tested, zero-cost patch. The filing package is ready.</p>
+    <div class="cta-actions reveal">
+      <a href="CA_Approval_Voting_Act_Filing_Package.docx" class="btn-primary">Download the filing package ↓</a>
+      <a href="mailto:info@approvalvotingca.org" class="btn-secondary">Get involved</a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <p>California Approval Voting Act &middot; Initiative Constitutional Amendment</p>
+  <p style="margin-top: 0.5rem;">
+    <a href="https://electionscience.org" target="_blank" rel="noopener">Center for Election Science</a>
+    &nbsp;&middot;&nbsp;
+    <a href="https://www.rangevoting.org/IEVS/Pictures.html" target="_blank" rel="noopener">IEVS Simulations</a>
+    &nbsp;&middot;&nbsp;
+    <a href="CA_Approval_Voting_Act_Filing_Package.docx">Filing Package</a>
+  </p>
+</footer>
+
+<!-- ─── SCRIPTS ─── -->
+<script>
+// Nav scroll effect
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+}, { passive: true });
+
+// Reveal on scroll
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+reveals.forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
